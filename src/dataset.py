@@ -1,5 +1,5 @@
 import os
-import glob
+import pandas as pd
 import librosa
 import numpy as np
 import torch
@@ -8,38 +8,54 @@ from torch.utils.data import Dataset
 class CompSpoofDataset(Dataset):
     """
     PyTorch Dataset for 5-Class Audio Deepfake Detection (ESDD2 / CompSpoofV2).
+    Uses the official CSV metadata for loading.
+    
+    Labels:
+    - original: 0
+    - bonafide_bonafide: 1
+    - spoof_bonafide: 2
+    - bonafide_spoof: 3
+    - spoof_spoof: 4
     """
-    def __init__(self, root_dir, sample_rate=16000, max_length_s=4.0, transform=None):
+    LABEL_MAP = {
+        'original': 0,
+        'bonafide_bonafide': 1,
+        'spoof_bonafide': 2,
+        'bonafide_spoof': 3,
+        'spoof_spoof': 4
+    }
+
+    def __init__(self, root_dir, csv_name, sample_rate=16000, max_length_s=4.0, transform=None):
+        """
+        root_dir: The directory containing 'mixed_audio', 'original_audio', etc.
+        csv_name: Path to the metadata CSV (e.g. 'development/train.csv')
+        """
         self.root_dir = root_dir
         self.sample_rate = sample_rate
         self.max_length = int(sample_rate * max_length_s)
         self.transform = transform
-        self.file_paths = []
-        self.labels = []
         
-        if not os.path.exists(root_dir):
-            return
-
-        # Expectations: subfolders are 'class_0', 'class_1', ..., 'class_4'
-        classes = sorted([d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))])
-        
-        for label, class_name in enumerate(classes):
-            class_dir = os.path.join(root_dir, class_name)
-            for ext in ('*.wav', '*.flac'):
-                files = glob.glob(os.path.join(class_dir, ext))
-                self.file_paths.extend(files)
-                self.labels.extend([label] * len(files))
+        csv_path = os.path.join(root_dir, csv_name)
+        if not os.path.exists(csv_path):
+            print(f"Warning: CSV not found at {csv_path}")
+            self.df = pd.DataFrame(columns=['audio_path', 'label'])
+        else:
+            self.df = pd.read_csv(csv_path)
 
     def __len__(self):
-        return len(self.file_paths)
+        return len(self.df)
     
     def __getitem__(self, idx):
-        file_path = self.file_paths[idx]
-        label = self.labels[idx]
+        row = self.df.iloc[idx]
+        audio_rel_path = row['audio_path']
+        label_str = row['label']
+        
+        label = self.LABEL_MAP.get(label_str, 4) # Default to spoof_spoof if unknown
+        file_path = os.path.join(self.root_dir, audio_rel_path)
         
         try:
             waveform, sr = librosa.load(file_path, sr=self.sample_rate)
-        except:
+        except Exception:
             waveform = np.zeros(self.max_length)
             sr = self.sample_rate
             
@@ -52,7 +68,6 @@ class CompSpoofDataset(Dataset):
         mel = librosa.feature.melspectrogram(y=waveform, sr=sr, n_mels=128, fmax=8000)
         log_mel = librosa.power_to_db(mel, ref=np.max)
         
-        # (Channels, Mels, Time)
         feature = torch.tensor(log_mel, dtype=torch.float32).unsqueeze(0)
         
         if self.transform:

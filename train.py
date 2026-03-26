@@ -14,11 +14,11 @@ def train(args):
     print(f"Using device: {device}")
 
     # Load data
-    train_dataset = CompSpoofDataset(os.path.join(args.data_dir, "train"))
-    val_dataset = CompSpoofDataset(os.path.join(args.data_dir, "dev"))
+    train_dataset = CompSpoofDataset(args.data_dir, "development/train.csv")
+    val_dataset = CompSpoofDataset(args.data_dir, "development/val.csv")
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
 
     model = DeepfakeDetectorResNet(num_classes=5).to(device)
     criterion = nn.CrossEntropyLoss()
@@ -59,6 +59,7 @@ def train(args):
                     val_total += labels.size(0)
             print(f"Val Acc: {100*val_correct/val_total:.2f}%")
             
+        torch.save(model.state_dict(), os.path.join(args.save_dir, f"checkpoint_epoch_{epoch}.pth"))
         torch.save(model.state_dict(), os.path.join(args.save_dir, "latest.pth"))
 
 if __name__ == "__main__":
