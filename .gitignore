@@ -7,9 +7,6 @@ __pycache__/
 .venv
 env/
 venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Data and models
 data/
@@ -18,5 +15,14 @@ data/
 *.pt
 *~
 
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints
+
+# Results / logs (keep structure, not content)
+results/*.png
+results/*.csv
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
