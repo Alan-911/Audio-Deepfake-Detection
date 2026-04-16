@@ -1,7 +1,21 @@
-# Audio Deepfake Detection — ESDD2 Challenge
+# CompSpoof Detection 🛡️
+> **Academic ML module classifying synthetic, deepfaked, and spoofed speech using PyTorch.**
 
-**Component-Aware Separation-Enhanced Audio Deepfake Detection**
-for the [ESDD2: Environment-Aware Speech and Sound Deepfake Detection Challenge](https://arxiv.org/abs/2601.07303) (Zhang et al., ICME 2026).
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+In response to the exponential rise in acoustic deepfakes and TTS mimicry, this academic model processes sub-frequency anomalies within voice recordings to flag potentially spoofed speech securely.
+
+### ✨ Key Features
+- **Acoustic Profiling Layer:** Utilizes custom transformations to isolate micro-artifacts within generated speech.
+- **High-Accuracy ML Model:** PyTorch deep neural classification optimized for generalized spoof attacks.
+- **Dataset Agnostic:** Can function effectively over varying base languages and recording complexities.
+- **Research Module Pipeline:** Cleanly modularized integration for future academic branches.
+
+---
+
+### 📺 Screenshots
+> *[Placeholder: Insert an image/GIF or graph of the tensor accuracy classifications]*
 
 ---
 
