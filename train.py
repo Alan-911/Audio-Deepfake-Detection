@@ -33,6 +33,7 @@ from tqdm import tqdm
 from src.dataset import CompSpoofDataset
 from src.model import DeepfakeDetector, DeepfakeDetectorResNet
 from src.separation import SeparationModule
+from src.plots import plot_training_history
 
 
 # ─── Helper: build model ──────────────────────────────────────────────────────
@@ -211,6 +212,13 @@ def train(args):
     print(f"[*] Checkpoints saved to: {args.save_dir}")
     print(f"[*] Training log:         {log_file}")
 
+    # Plot training curves
+    history_plot = os.path.join(args.log_dir, "training_history.png")
+    try:
+        plot_training_history(log_file, save_path=history_plot)
+    except Exception as e:
+        print(f"[!] Could not save training history plot: {e}")
+
 
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
@@ -245,10 +253,12 @@ if __name__ == "__main__":
                         help="Final separation loss weight (after 10-epoch warmup)")
 
     # Flags
-    parser.add_argument("--weighted_sampler", action="store_true", default=True,
-                        help="Use WeightedRandomSampler to handle class imbalance")
-    parser.add_argument("--class_weights",    action="store_true", default=True,
-                        help="Apply inverse-frequency class weights to CrossEntropy")
+    parser.add_argument("--weighted_sampler", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="Use WeightedRandomSampler to handle class imbalance (default: on). Disable with --no-weighted_sampler")
+    parser.add_argument("--class_weights",    action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="Apply inverse-frequency class weights to CrossEntropy (default: on). Disable with --no-class_weights")
 
     args = parser.parse_args()
     train(args)
