@@ -15,8 +15,17 @@ Optimiser:
 Scheduler:
     CosineAnnealingLR (T_max = num_epochs)
 
+Resume:
+    A full checkpoint (model + optimizer + scheduler + epoch + best_f1 + history)
+    is saved to models/latest_ckpt.pth after every epoch.
+    Pass --resume to restart from the last saved state automatically.
+    Model-only checkpoints (best_model.pth, checkpoint_epoch_N.pth) remain
+    compatible with evaluate.py and infer.py.
+
 Usage:
     python train.py --data_dir ./data/CompSpoofV2 --epochs 30
+    python train.py --resume                        # auto-resume from latest_ckpt.pth
+    python train.py --resume models/latest_ckpt.pth # explicit path
     python train.py --data_dir ./data/CompSpoofV2 --model resnet  # baseline ablation
 """
 
@@ -44,6 +53,41 @@ def build_model(model_type: str, device: torch.device):
         return DeepfakeDetectorResNet(num_classes=5, pretrained=True).to(device)
     print("[*] Using full Wav2Vec2 + Separation + BiLSTM + Attention model")
     return DeepfakeDetector(num_classes=5).to(device)
+
+
+# ─── Helper: save / load full checkpoint ──────────────────────────────────────
+
+def save_full_checkpoint(path, model, optimizer, scheduler,
+                          epoch, best_f1, history):
+    """
+    Save a full training checkpoint for resume support.
+    Separate from model-only checkpoints used by evaluate.py / infer.py.
+    """
+    torch.save({
+        'epoch':                epoch,
+        'best_f1':              best_f1,
+        'history':              history,
+        'model_state_dict':     model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
+    }, path)
+
+
+def load_full_checkpoint(path, model, optimizer, scheduler, device):
+    """
+    Restore model, optimizer, scheduler, epoch counter, best_f1, and history.
+    Returns (start_epoch, best_f1, history).
+    """
+    print(f"[*] Resuming from checkpoint: {path}")
+    ckpt = torch.load(path, map_location=device)
+    model.load_state_dict(ckpt['model_state_dict'])
+    optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+    scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+    start_epoch = ckpt['epoch'] + 1          # resume from the next epoch
+    best_f1     = ckpt['best_f1']
+    history     = ckpt.get('history', [])
+    print(f"[*] Resumed at epoch {start_epoch} | Best Val F1 so far: {best_f1:.4f}")
+    return start_epoch, best_f1, history
 
 
 # ─── Helper: one training epoch ───────────────────────────────────────────────
@@ -163,14 +207,31 @@ def train(args):
     # ── Output dirs ───────────────────────────────────────────────────────────
     os.makedirs(args.save_dir, exist_ok=True)
     os.makedirs(args.log_dir,  exist_ok=True)
-    log_file = os.path.join(args.log_dir, "training_log.json")
-    history  = []
-    best_f1  = 0.0
+    log_file       = os.path.join(args.log_dir, "training_log.json")
+    full_ckpt_path = os.path.join(args.save_dir, "latest_ckpt.pth")
+    history        = []
+    best_f1        = 0.0
+    start_epoch    = 1
 
-    print(f"\n[*] Starting training for {args.epochs} epochs")
+    # ── Resume ────────────────────────────────────────────────────────────────
+    if args.resume:
+        resume_path = (args.resume
+                       if isinstance(args.resume, str) and os.path.exists(args.resume)
+                       else full_ckpt_path)
+        if os.path.exists(resume_path):
+            start_epoch, best_f1, history = load_full_checkpoint(
+                resume_path, model, optimizer, scheduler, device)
+            # Sync log file with restored history so it stays consistent
+            with open(log_file, 'w') as f:
+                json.dump(history, f, indent=2)
+        else:
+            print(f"[!] No checkpoint found at {resume_path}. Starting from scratch.")
+
+    remaining = args.epochs - start_epoch + 1
+    print(f"\n[*] Starting training — epochs {start_epoch}→{args.epochs} ({remaining} remaining)")
     print("=" * 60)
 
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(start_epoch, args.epochs + 1):
         # Lambda warm-up for separation loss
         lambda_sep = SeparationModule.separation_loss_weight(
             epoch - 1, warmup_epochs=10,
@@ -206,6 +267,10 @@ def train(args):
             best_f1 = val_f1
             torch.save(model.state_dict(), os.path.join(args.save_dir, "best_model.pth"))
             print(f"  ✓ New best Val Macro-F1: {best_f1:.4f} — saved best_model.pth")
+
+        # Full checkpoint for resume support
+        save_full_checkpoint(full_ckpt_path, model, optimizer, scheduler,
+                             epoch, best_f1, history)
 
     print("\n" + "=" * 60)
     print(f"[*] Training complete. Best Val Macro-F1: {best_f1:.4f}")
@@ -259,6 +324,13 @@ if __name__ == "__main__":
     parser.add_argument("--class_weights",    action=argparse.BooleanOptionalAction,
                         default=True,
                         help="Apply inverse-frequency class weights to CrossEntropy (default: on). Disable with --no-class_weights")
+
+    # Resume
+    parser.add_argument("--resume", nargs="?", const=True, default=False,
+                        metavar="CHECKPOINT",
+                        help="Resume training from a full checkpoint. "
+                             "Pass a path to use a specific file, or use --resume alone "
+                             "to auto-load models/latest_ckpt.pth")
 
     args = parser.parse_args()
     train(args)
