@@ -55,15 +55,21 @@ def add_gaussian_noise(waveform: torch.Tensor,
 
 def time_stretch(waveform: torch.Tensor, sr: int,
                  rate_range=(0.9, 1.1)) -> torch.Tensor:
-    """Random time stretch using resampling (lightweight approximation)."""
-    rate       = random.uniform(*rate_range)
-    orig_len   = waveform.shape[-1]
-    new_len    = int(orig_len / rate)
-    resampler  = T.Resample(new_len, orig_len)
-    stretched  = torch.nn.functional.interpolate(
-        waveform.unsqueeze(0).unsqueeze(0), size=new_len, mode='linear',
-        align_corners=False).squeeze()
-    return resampler(stretched.unsqueeze(0)).squeeze(0)
+    """Random time stretch via small-kernel resampling (worker-safe)."""
+    rate      = random.uniform(*rate_range)
+    orig_len  = waveform.shape[-1]
+    # Use small coprime-friendly integers to avoid huge resampling kernels
+    orig_freq = 100
+    new_freq  = max(1, round(orig_freq / rate))
+    resampler = T.Resample(orig_freq, new_freq)
+    stretched = resampler(waveform.unsqueeze(0)).squeeze(0)
+    # Restore original length
+    if stretched.shape[0] < orig_len:
+        stretched = torch.nn.functional.pad(
+            stretched, (0, orig_len - stretched.shape[0]))
+    else:
+        stretched = stretched[:orig_len]
+    return stretched
 
 
 def pitch_shift(waveform: torch.Tensor, sr: int,
