@@ -88,9 +88,18 @@ def generate(args):
         sys.exit(1)
 
     model = DeepfakeDetector(num_classes=5).to(device)
-    model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+    ckpt = torch.load(args.checkpoint, map_location=device)
+    # Strip keys from incompatible architectures (e.g. old UNet checkpoints)
+    model_keys = set(model.state_dict().keys())
+    filtered = {k: v for k, v in ckpt.items() if k in model_keys
+                and v.shape == model.state_dict()[k].shape}
+    missing = model_keys - set(filtered.keys())
+    if missing:
+        print(f"[!] {len(missing)} keys not loaded from checkpoint (incompatible arch).")
+        print(f"[!] {len(filtered)} / {len(model_keys)} keys loaded.")
+    model.load_state_dict(filtered, strict=False)
     model.eval()
-    print(f"[*] Model loaded successfully.")
+    print(f"[*] Model loaded ({len(filtered)}/{len(model_keys)} keys matched).")
 
     # ── Load test CSV ─────────────────────────────────────────────────────────
     # Expected paths (mirrors evaluate.py convention):
