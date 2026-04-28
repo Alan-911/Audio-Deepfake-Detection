@@ -26,3 +26,4 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+make_zip.ps1

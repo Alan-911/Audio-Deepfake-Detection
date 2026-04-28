@@ -1,0 +1,47 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+type: software
+title: "DPADD-ES: Component-Aware Separation-Enhanced Audio Deepfake Detection for ESDD2"
+authors:
+  - family-names: Iragena
+    given-names: Yves Alain
+    email: iragena@cua.edu
+    affiliation: "Multimodal AI Lab (MAIL), The Catholic University of America"
+repository-code: "https://github.com/Alan-911/Audio-Deepfake-Detection"
+url: "https://github.com/Alan-911/Audio-Deepfake-Detection"
+license: MIT
+year: 2026
+keywords:
+  - audio deepfake detection
+  - source separation
+  - self-supervised learning
+  - wav2vec2
+  - ESDD2
+  - CompSpoofV2
+  - BiLSTM
+  - attention
+abstract: >
+  DPADD-ES is a component-aware audio deepfake detection system submitted to the
+  ESDD2 ICME 2026 Grand Challenge. It explicitly disentangles speech and
+  environmental latent representations via mask-based separation with a Frobenius
+  orthogonality loss, achieving validation macro-F1 of 0.8923 on CompSpoofV2.
+references:
+  - type: article
+    title: "ESDD2: Environment-Aware Speech and Sound Deepfake Detection Challenge"
+    authors:
+      - family-names: Zhang
+        given-names: Xueping
+      - family-names: Yin
+        given-names: Han
+      - family-names: Xiao
+        given-names: Yang
+      - family-names: Zhang
+        given-names: Lin
+      - family-names: Dang
+        given-names: Ting
+      - family-names: Das
+        given-names: "Rohan Kumar"
+      - family-names: Li
+        given-names: Ming
+    year: 2026
+    journal: "arXiv:2601.07303"
