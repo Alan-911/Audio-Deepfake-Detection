@@ -21,26 +21,58 @@ DPADD-ES performs **component-level audio forensics** by explicitly disentanglin
 
 ## Architecture
 
-```
-Raw Waveform (16 kHz, 4s = 64,000 samples)
-        ↓
-  Wav2Vec2-Base  ──  SSL contextual embeddings  Z ∈ ℝ^{T × 768}
-        ↓
-  Mask-Based Separation Module
-   ├─ M_speech = σ(MLP_s(Z))  →  Z_speech = Z ⊙ M_s
-   └─ M_env    = σ(MLP_e(Z))  →  Z_env    = Z ⊙ M_e    [L_sep: Frobenius orthogonality]
-        ↓
-  Speech Branch Encoder  (768 → 512,  LayerNorm, GELU, Dropout 0.1)
-  Env    Branch Encoder  (768 → 512,  LayerNorm, GELU, Dropout 0.1)
-        ↓
-  Fusion: [Z_speech; Z_env]  ∈ ℝ^{T × 1024}  +  LayerNorm  +  Dropout 0.2
-        ↓
-  BiLSTM × 2  (hidden = 256 per direction,  output = 512-dim,  dropout = 0.3)
-        ↓
-  Multi-Head Self-Attention  (4 heads,  d_model = 512,  dropout = 0.1)
-  + Residual  +  LayerNorm  +  Attention-Weighted Mean Pooling
-        ↓
-  5-Class Classifier  (Dropout 0.2  →  Linear 512 → 5)
+```mermaid
+flowchart TD
+    classDef input fill:#f1f5f9,stroke:#94a3b8,stroke-width:2px,color:#000
+    classDef wav2vec fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    classDef separation fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    classDef encoder fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef fusion fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    classDef classifier fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    classDef loss fill:#fecdd3,stroke:#e11d48,stroke-dasharray: 5 5,color:#9f1239
+
+    RAW["Raw Waveform\n(16 kHz, 4s = 64k samples)"]:::input
+    
+    W2V["Wav2Vec2-Base\n(SSL Contextual Embeddings Z)"]:::wav2vec
+    RAW --> W2V
+    
+    subgraph Sep["Mask-Based Separation Module"]
+        direction TB
+        M_S["M_speech = σ(MLP_s(Z))"]:::separation
+        M_E["M_env = σ(MLP_e(Z))"]:::separation
+        
+        Z_S["Z_speech = Z ⊙ M_speech"]:::separation
+        Z_E["Z_env = Z ⊙ M_env"]:::separation
+        
+        M_S --> Z_S
+        M_E --> Z_E
+    end
+    
+    W2V --> M_S
+    W2V --> M_E
+    
+    L_SEP[["L_sep: Frobenius Orthogonality Loss"]]:::loss
+    Z_S -.-> L_SEP
+    Z_E -.-> L_SEP
+    
+    S_ENC["Speech Branch Encoder\n(Linear 512, LN, GELU)"]:::encoder
+    E_ENC["Env Branch Encoder\n(Linear 512, LN, GELU)"]:::encoder
+    
+    Z_S --> S_ENC
+    Z_E --> E_ENC
+    
+    FUSION["Fusion: [Z_speech; Z_env]\n(1024-dim, LayerNorm, Dropout)"]:::fusion
+    S_ENC --> FUSION
+    E_ENC --> FUSION
+    
+    BILSTM["BiLSTM × 2\n(256 hidden per direction)"]:::fusion
+    FUSION --> BILSTM
+    
+    ATTN["Multi-Head Self-Attention\n(4 heads, Res, LN, Mean Pooling)"]:::fusion
+    BILSTM --> ATTN
+    
+    CLASS["5-Class Classifier\n(Linear 512 → 5)"]:::classifier
+    ATTN --> CLASS
 ```
 
 **Training loss:**
