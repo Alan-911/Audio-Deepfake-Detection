@@ -2,8 +2,11 @@
 
 > **ICME 2026 Grand Challenge (ESDD2) Submission** — Multimodal AI Laboratory, Catholic University of America
 
+**[🚀 Live Showcase →](https://dpadd-es.vercel.app)**
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange.svg)](https://pytorch.org)
+[![Live Demo](https://img.shields.io/badge/Demo-Live-22c55e.svg)](https://dpadd-es.vercel.app)
 [![Macro-F1](https://img.shields.io/badge/Macro--F1-0.8923-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
