@@ -1,103 +1,81 @@
-# DPADD-ES: Component-Aware Audio Deepfake Detection
+# DPADD-ES — Component-Aware Audio Deepfake Detection
 
-> **ICME 2026 Grand Challenge (ESDD2) Submission** — Multimodal AI Laboratory, Catholic University of America
+**Speech authenticity research · PyTorch · Wav2Vec2 · Component separation · Five-class classification**
 
-**[🚀 Live Showcase →](https://dpadd-es.vercel.app)**
+[Research showcase](https://dpadd-es.vercel.app) · [Model implementation](src/model.py) · [Training code](train.py) · [Evaluation code](evaluate.py)
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange.svg)](https://pytorch.org)
-[![Live Demo](https://img.shields.io/badge/Demo-Live-22c55e.svg)](https://dpadd-es.vercel.app)
-[![Macro-F1](https://img.shields.io/badge/Macro--F1-0.8923-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## Research question
 
-## The Problem
+Can a speech-authentication model better distinguish manipulated speech by separating speech-related and environmental acoustic representations? This repository implements an experimental architecture for the ICME 2026 ESDD2 / CompSpoofV2 audio-deepfake classification task.
 
-Existing audio deepfake detectors treat a recording as a single entity — but **synthetic artifacts live in the speech signal, not the background noise**. Mixing them causes catastrophic generalization failure: the ESDD2 baseline drops from **validation F1 = 0.9462 → test F1 = 0.6327** when encountering unseen spoof generators.
+**Research affiliation:** Multimodal Artificial Intelligence Laboratory (MAIL), The Catholic University of America.
 
-## Solution: Mask-Based Component Disentanglement
+## Approach
 
-DPADD-ES separates speech and environmental representations into orthogonal latent spaces using a **Frobenius orthogonality loss**, forcing the model to learn artifact patterns that generalize across environments.
-
-```
-Audio Input
-    │
-    ▼
-Wav2Vec2-base (SSL encoder)
-    │
-    ▼
-Mask Separation Module ──── Frobenius Orthogonality Loss
-    ├── Speech Stream
-    └── Environment Stream
-         │
-         ▼
-    BiLSTM (temporal encoding)
-         │
-         ▼
-    Multi-Head Self-Attention
-         │
-         ▼
-    5-Class Classifier
-    (bonafide / spoof A–D)
+```text
+Audio waveform
+   → pretrained Wav2Vec2 feature encoder
+   → mask-based speech/environment separation
+   → two learned representation branches
+   → feature fusion + bidirectional LSTM
+   → multi-head attention
+   → five-class classifier
 ```
 
-## Results
+The training objective combines cross-entropy classification loss with a separation/orthogonality term. A ResNet baseline is also implemented for comparison.
 
-| Model | Val Macro-F1 | Test Macro-F1 | GR Score |
-|-------|-------------|---------------|----------|
-| ESDD2 Baseline | 0.9462 | 0.6327 | ~1.50 |
-| **DPADD-ES (ours)** | **0.9201** | **0.8923** | **<1.10** |
+| Component | Source |
+| --- | --- |
+| Model and baseline | [src/model.py](src/model.py) |
+| Separation module | [src/separation.py](src/separation.py) |
+| Dataset processing | [src/dataset.py](src/dataset.py) |
+| Training, resume and checkpoints | [train.py](train.py) |
+| Evaluation: macro-F1, EER, class report, plots | [evaluate.py](evaluate.py) |
+| Inference and submissions | [infer.py](infer.py), [generate_submission.py](generate_submission.py) |
 
-Per-class F1 range: 0.7819 – 0.9612. Mask separation module alone contributed +0.0573 F1 over ablated baseline.
+## Reported research results
 
-## Dataset
+The original project documentation reports the following CompSpoofV2 experiments:
 
-**CompSpoofV2** — ~250,000 clips, 5 classes, ~283 hours of audio across 4 spoof generator types + bonafide.
+| Model | Validation macro-F1 | Test macro-F1 |
+| --- | ---: | ---: |
+| ESDD2 baseline | 0.9462 | 0.6327 |
+| DPADD-ES | 0.9201 | 0.8923 |
+
+**Evidence note:** These are project-reported experiment results, **not freshly reproduced by this repository review**. The repository currently has placeholder directories in `models/` and `results/`, rather than published checkpoints and raw run logs. A reproducibility package with saved configs, training logs, checkpoints (where redistribution is permitted), and evaluation splits would strengthen the claim.
+
+## Reproduction
+
+Requires the separately obtained CompSpoofV2 dataset and an environment compatible with the dependencies in [requirements.txt](requirements.txt). Download and use the dataset only under its license and access conditions.
 
 ```bash
-python download_dataset.py   # auto-downloads and organizes splits
-```
-
-## Quick Start
-
-```bash
-git clone https://github.com/Alan-911/Audio-Deepfake-Detection
+git clone https://github.com/Alan-911/Audio-Deepfake-Detection.git
 cd Audio-Deepfake-Detection
-python -m venv venv && source venv/bin/activate  # or venv\Scripts\activate on Windows
+python -m venv .venv
+# Activate the environment for your operating system
 pip install -r requirements.txt
 
-# Train
-python train.py --config configs/dpadd_es.yaml
+# Train (requires data in ./data/CompSpoofV2)
+python train.py --data_dir ./data/CompSpoofV2 --epochs 30
 
-# Evaluate
-python evaluate.py --checkpoint models/best.pt --split test
+# Evaluate an existing checkpoint
+python evaluate.py --checkpoint models/best_model.pth --data_dir ./data/CompSpoofV2
 
-# Inference on a single file
-python infer.py --audio path/to/audio.wav
+# Classify an audio sample using a trained checkpoint
+python infer.py --help
 ```
 
-## Repo Structure
+See `python train.py --help` and `python evaluate.py --help` for additional options. Pretrained Wav2Vec2 weights may be downloaded by the Transformers library when first used.
 
-```
-├── src/              # Model architecture, data loaders, loss functions
-├── models/           # Saved checkpoints
-├── results/          # Evaluation outputs and confusion matrices
-├── configs/          # Training configuration files
-├── train.py          # Training entrypoint
-├── evaluate.py       # Evaluation script
-├── infer.py          # Single-file inference
-└── download_dataset.py
-```
+## Scope and limitations
 
-## Citation
+- Five-class deepfake detection is a research problem; results can change across speakers, recording conditions and unseen generation systems.
+- Dataset files and trained weights are **not included** in this public repository.
+- This repository does not currently provide a continuous-integration test suite or downloadable experimental run artifacts.
+- The linked showcase demonstrates project presentation; it is not, by itself, evidence of reproducible evaluation.
 
-If you use this work, please cite:
+## Research citation
 
-```
-Iragena, Y. A. (2026). DPADD-ES: Component-Aware Deepfake Audio Detection
-via Mask-Based Speech/Environment Disentanglement.
-ICME 2026 Grand Challenge (ESDD2). Catholic University of America.
-```
+See [CITATION.cff](CITATION.cff) for the project's citation metadata. Confirm publication or challenge-participation status separately from repository availability.
 
----
-
-**Yves Alain Iragena** | MAIL Lab, Catholic University of America | iragena@cua.edu
+**Maintainer:** Yves Alain Iragena · [Portfolio](https://alan-911.github.io/my-portfolio/)
