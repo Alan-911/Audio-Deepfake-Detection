@@ -4,6 +4,12 @@
 
 [Research showcase](https://dpadd-es.vercel.app) · [Model implementation](src/model.py) · [Training code](train.py) · [Evaluation code](evaluate.py)
 
+## Research architecture at a glance
+
+![Component-aware speech deepfake detection architecture](docs/images/project-overview.svg)
+
+*Conceptual model pipeline. Experimental metrics and reproduction limits are documented below.*
+
 ## Research question
 
 Can a speech-authentication model better distinguish manipulated speech by separating speech-related and environmental acoustic representations? This repository implements an experimental architecture for the ICME 2026 ESDD2 / CompSpoofV2 audio-deepfake classification task.
