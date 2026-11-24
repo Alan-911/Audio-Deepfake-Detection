@@ -1,0 +1,33 @@
+name: CI — Research source checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  source-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python syntax validation (no dataset/GPU required)
+        run: python -m compileall -q src train.py evaluate.py infer.py generate_submission.py download_dataset.py
+      - name: Research assets and citation metadata
+        run: |
+          test -f CITATION.cff
+          test -f requirements.txt
+          test -f src/model.py
+          test -f src/separation.py
+          test -f evaluate.py
+          test -f train.py
+          test -f LICENSE
+      - name: Confirm datasets/checkpoints are not committed
+        run: |
+          if git ls-files | grep -E '(^|/)(CompSpoofV2|checkpoints)/|\.(pth|pt|ckpt)$'; then
+            echo "Review committed dataset or model weight ownership and artifact licensing"
+            exit 1
+          fi
