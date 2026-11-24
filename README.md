@@ -4,11 +4,11 @@
 
 [Research showcase](https://dpadd-es.vercel.app) · [Model implementation](src/model.py) · [Training code](train.py) · [Evaluation code](evaluate.py)
 
-## Research architecture at a glance
+## Acoustic feature visualization
 
-![Component-aware speech deepfake detection architecture](docs/images/project-overview.svg)
+![Audio waveform, spectrogram, mel-spectrogram, and MFCC visualization](https://d2ol7oe51mr4n9.cloudfront.net/user_3BjvznL67PSnqP9w6BCX0wqGk5P/b901dfeb-f097-4b66-b59f-5c254ec3cd3a.png)
 
-*Conceptual model pipeline. Experimental metrics and reproduction limits are documented below.*
+*Acoustic feature visualization supplied for this project: (a) waveform, (b) spectrogram, (c) mel-spectrogram, and (d) MFCCs. This illustrates audio-signal representations; it is not a model architecture diagram or a reported detection-performance result.*
 
 ## Research question
 
