@@ -1,5 +1,7 @@
 # DPADD-ES — Component-Aware Audio Deepfake Detection
 
+[![CI](https://github.com/Alan-911/Audio-Deepfake-Detection/actions/workflows/ci.yml/badge.svg)](https://github.com/Alan-911/Audio-Deepfake-Detection/actions/workflows/ci.yml) [![Security](https://github.com/Alan-911/Audio-Deepfake-Detection/actions/workflows/security.yml/badge.svg)](https://github.com/Alan-911/Audio-Deepfake-Detection/actions/workflows/security.yml)
+
 **Speech authenticity research · PyTorch · Wav2Vec2 · Component separation · Five-class classification**
 
 [Research showcase](https://dpadd-es.vercel.app) · [Model implementation](src/model.py) · [Training code](train.py) · [Evaluation code](evaluate.py)
@@ -85,3 +87,11 @@ See `python train.py --help` and `python evaluate.py --help` for additional opti
 See [CITATION.cff](CITATION.cff) for the project's citation metadata. Confirm publication or challenge-participation status separately from repository availability.
 
 **Maintainer:** Yves Alain Iragena · [Portfolio](https://alan-911.github.io/my-portfolio/)
+
+
+## Repository quality and security
+
+- [Continuous integration](.github/workflows/ci.yml), [CodeQL and secret scanning](.github/workflows/security.yml).
+- [Security reporting policy](SECURITY.md) and [contribution guidelines](CONTRIBUTING.md).
+- Lightweight CI checks source syntax and files without a dataset or GPU; it does **not** reproduce macro-F1 scores. See [reproducibility requirements](docs/reproducibility.md).
+- See [LICENSE](LICENSE) for the repository's source-code license text; dataset and model licenses are independent.

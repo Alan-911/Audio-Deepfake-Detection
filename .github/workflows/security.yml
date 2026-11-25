@@ -1,0 +1,37 @@
+name: Security — CodeQL and repository secret scan
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "22 8 * * 1"
+permissions:
+  contents: read
+jobs:
+  codeql:
+    name: CodeQL (python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
+        with:
+          languages: python
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
+  secrets:
+    name: Trivy repository secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret
+          exit-code: "1"
